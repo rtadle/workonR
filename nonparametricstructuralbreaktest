@@ -1,0 +1,76 @@
+
+# This uses the package as described in Zeileis, et al. (2003):
+# install.packages("strucchange")
+library("strucchange")
+
+
+# This is the lag value of the sentiment score of the minutes:
+lagminscore = lag(dataset$MinutesScoresaspercentages, k=1)
+
+
+# This runs the empirical fluctuation process as shown in Zeileis, et al. (2003):
+empflucprocess = efp(MinutesScoresaspercentages ~ 1, dataset, type = "OLS-CUSUM")
+# empflucprocess = efp(MinutesScoresaspercentages ~ lagminscore, dataset, type = "RE")
+plot(empflucprocess)
+
+
+# This computes then graphically shows the F-statistics for all potential change points (2007 - 2010):
+# fstatfig = Fstats(dataset$MinutesScoresaspercentages ~ 1)  ----- This is the original function
+fstatfig = Fstats(dataset$MinutesScoresaspercentages ~ 1,  from = 0.2, to 0.5)
+plot(fstatfig)
+
+
+# This examines how many breakpoints, based on the information criteria, are optimal:
+breakpointminsent = breakpoints(dataset$MinutesScoresaspercentages ~ 1)
+plot(breakpointminsent)
+
+
+# This sets the breakpoints for the minutes sentiment series (the number of breakpoints are pre-determined and reported):
+breakpointmarkers = breakpoints(breakpointminsent, breaks = 2)
+breakpointmarkers
+
+
+# This plots the data using the empirical fluctuation process (most likely not needed):
+epfconsideringbreaknum = efp(dataset$MinutesScoresaspercentages ~ breakfactor(breakpointmarkers), type = "OLS-CUSUM")
+plot(epfconsideringbreaknum)
+
+
+# This specifies the dates to be used in the graph:
+# dateholder = c(1, 9, 17, 25, 33, 41, 49, 57, 65, 73, 81, 89)
+dateholder = seq(2, 90, by=8)
+monthyear = c("jan05", "  ", "jan07", "  ", "jan09", "  ", "jan11", "  ", "jan13", "  ", "jan15", "  ")
+
+
+# This specifies dates for the recession:
+recessioncounts = table(dataset$Recession)
+
+
+# This specifies the tick marks for the y_axis:
+yvectorholder = seq(-80, 80, by=40)
+yaxisvalues = seq(-80, 80, by=40)
+
+
+# This plots the data with a fitted model:
+segmentedseries = lm(dataset$MinutesScoresaspercentages 
+                     ~ breakfactor(breakpointminsent, breaks = 2))
+# plot(dataset$index, dataset$Recession, type="h", xlim =c(26, 36), lwd=40, col = 8, xaxt = 'n', yaxt = 'n', xlab='', ylab='', main='')
+# par(new=TRUE)
+par(bty = 'L') 
+plot(dataset$index, dataset$MinutesScoresaspercentages, type="l", 
+     col = "dodgerblue4", lwd=3, xlab = "Date", ylab = "Score", 
+     xaxt = 'n', yaxt = 'n', ylim = c(-80, 80), 
+     panel.first = abline(v = seq(26,37,by=1), lwd=10, col = 8,
+                          abline(h = 0,col=8)))
+# lines(fitted(segmentedseries), col = 9)
+lines(fitted(segmentedseries), col = 9, type="S")
+# abline(v = 13,col=9,lty=2)
+# abline(v = 26,col=9,lty=2)
+# abline(v = 39,col=9,lty=2)
+# abline(v = 58,col=9,lty=2)
+# abline(v = 71,col=9,lty=2)
+abline(v = 22,col=9,lty=2)
+abline(v = 36,col=9,lty=2)
+par(xpd=FALSE) # This makes sure to keep the lines within the graph area
+axis(1, at = dateholder, labels = monthyear)
+axis(2, at = yvectorholder, labels = yaxisvalues)
+# title(main = "Sentiment Index of FOMC Minutes: Structural Breaks")
